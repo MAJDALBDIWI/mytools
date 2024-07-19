@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ein Tool zum Speichern von Texten im Gehirn</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+        header {
+            background-color: #00796b;
+            color: white;
+            padding: 20px 0;
+            font-size: 2.5em;
+            font-weight: bold;
+            border-bottom: 4px solid #004d40;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+        textarea, select, button {
+            margin: 10px;
+            padding: 12px;
+            font-size: 1em;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            background-color: #00796b;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #004d40;
+        }
+        .translation, .sentence {
+            margin: 20px;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        .translation {
+            background-color: #e8f5e9;
+            font-size: 1.2em;
+        }
+        .sentence {
+            background-color: #b2dfdb;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        .hidden {
+            display: none;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        .controls button {
+            margin: 0 10px;
+            padding: 10px 20px;
+        }
+        .controls .active {
+            background-color: #004d40;
+        }
+        .controls .active:hover {
+            background-color: #003d33;
+        }
+        .info {
+            text-align: left;
+            margin: 20px 0;
+        }
+        .whatsapp-button {
+            display: inline-block;
+            background-color: #25D366;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 1em;
+            margin-top: 20px;
+        }
+        .whatsapp-button:hover {
+            background-color: #128C7E;
+        }
+    </style>
+</head>
+<body>
+    <header>Ein Tool zum Speichern von Texten im Gehirn</header>
+
+    <div id="mainContent" class="container">
+        <h2>Text und Spracheinstellungen</h2>
+        <textarea id="germanText" placeholder="Geben Sie hier den gesamten deutschen Text ein..." rows="6" cols="60"></textarea><br>
+        <label for="translationLang">Wählen Sie die Übersetzungssprache:</label>
+        <select id="translationLang">
+            <option value="ar">Arabisch</option>
+            <option value="uk">Ukrainisch</option>
+            <option value="tr">Türkisch</option>
+        </select><br>
+        <button onclick="startPresentation()">Start Präsentation</button>
+    </div>
+
+    <div id="presentationSection" class="container hidden">
+        <h2>Präsentation</h2>
+        <div id="currentSentence" class="sentence"></div>
+        <div id="currentTranslation" class="translation"></div>
+        <div class="controls">
+            <button id="prevBtn" onclick="prevSentence()">Vorherige</button>
+            <button id="nextBtn" onclick="nextSentence()">Nächste</button>
+            <button id="stopBtn" onclick="togglePlayback()">Stoppen</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="info">
+            <h2>Wie man das Tool verwendet:</h2>
+            <ol>
+                <li><strong>Geben Sie den gesamten deutschen Text ein:</strong> Schreiben Sie den vollständigen deutschen Text in das Textfeld.</li>
+                <li><strong>Wählen Sie die Sprache für die Übersetzung:</strong> Wählen Sie eine der verfügbaren Sprachen (Arabisch, Ukrainisch oder Türkisch) aus der Dropdown-Liste aus.</li>
+                <li><strong>Klicken Sie auf "Start Präsentation":</strong> Dies wird den deutschen Text automatisch in Sätze aufteilen, übersetzen und diese in der ausgewählten Übersetzung anzeigen.</li>
+                <li><strong>Verwenden Sie die Tasten "Vorherige" und "Nächste":</strong> Um zwischen den Sätzen zu wechseln. Der Text wird in deutscher Sprache vorgelesen und die Übersetzung angezeigt.</li>
+            </ol>
+            <h2>Service:</h2>
+            <p>Dieser Service ermöglicht es Ihnen, Text in einer Sprache einzufügen, ihn in eine andere Sprache zu übersetzen und ihn in einer Präsentation anzuhören.</p>
+            <h2>Erstellt von:</h2>
+            <p>Majd Albdiwi</p>
+            <p>Telefon: +4917624128422</p>
+            <p>Email: Majd.albdiwi@gmail.com</p>
+            <a href="https://wa.me/+4917624128422" class="whatsapp-button">Kontaktieren Sie uns auf WhatsApp</a>
+        </div>
+    </div>
+
+    <script>
+        let sentences = [];
+        let currentIndex = 0;
+        let isPlaying = false;
+        let utterance = null;
+
+        async function startPresentation() {
+            const germanText = document.getElementById('germanText').value;
+            const targetLang = document.getElementById('translationLang').value;
+
+            if (!germanText) {
+                alert('Bitte geben Sie einen Text ein.');
+                return;
+            }
+
+            sentences = splitTextIntoSentences(germanText);
+            document.getElementById('mainContent').classList.add('hidden');
+            document.getElementById('presentationSection').classList.remove('hidden');
+            currentIndex = 0;
+            isPlaying = true;
+            displayCurrentSentence();
+        }
+
+        function splitTextIntoSentences(text) {
+            return text.split(/(?<=[.!?])\s+/); // Split text by punctuation followed by whitespace
+        }
+
+        async function displayCurrentSentence() {
+            if (currentIndex < sentences.length) {
+                const sentence = sentences[currentIndex];
+                const translation = await translateText(sentence, document.getElementById('translationLang').value);
+
+                document.getElementById('currentSentence').innerText = sentence;
+                document.getElementById('currentTranslation').innerText = translation;
+
+                if (utterance) {
+                    window.speechSynthesis.cancel(); // Stop any current speech
+                }
+
+                utterance = new SpeechSynthesisUtterance(sentence);
+                utterance.lang = 'de-DE';
+                utterance.onend = () => {
+                    if (isPlaying) {
+                        playbackTimeout = setTimeout(() => nextSentence(), 0); // Go to next sentence immediately
+                    }
+                };
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function prevSentence() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                clearTimeout(playbackTimeout); // Stop automatic playback when manually navigating
+                displayCurrentSentence();
+            }
+        }
+
+        function nextSentence() {
+            if (currentIndex < sentences.length - 1) {
+                currentIndex++;
+                clearTimeout(playbackTimeout); // Stop automatic playback when manually navigating
+                displayCurrentSentence();
+            }
+        }
+
+        let playbackTimeout = null;
+        function togglePlayback() {
+            if (isPlaying) {
+                window.speechSynthesis.cancel();
+                isPlaying = false;
+                document.getElementById('stopBtn').innerText = 'Fortsetzen';
+            } else {
+                isPlaying = true;
+                document.getElementById('stopBtn').innerText = 'Stoppen';
+                displayCurrentSentence(); // Resume from current index
+            }
+        }
+
+        async function translateText(text, targetLang) {
+            const services = [
+                'https://libretranslate.de/translate',
+                'https://api.mymemory.translated.net/get'
+            ];
+
+            for (const service of services) {
+                try {
+                    let response, data;
+                    if (service === 'https://libretranslate.de/translate') {
+                        response = await fetch(service, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                q: text,
+                                source: 'de',
+                                target: targetLang,
+                                format: 'text'
+                            })
+                        });
+                        data = await response.json();
+                        if (data.translatedText) {
+                            return data.translatedText;
+                        }
+                    } else if (service === 'https://api.mymemory.translated.net/get') {
+                        response = await fetch(`${service}?q=${encodeURIComponent(text)}&langpair=de|${targetLang}`);
+                        data = await response.json();
+                        if (data.responseData) {
+                            return data.responseData.translatedText;
+                        }
+                    }
+                } catch (error) {
+                    console.error(`Error using service ${service}:`, error);
+                }
+            }
+            return 'Übersetzung nicht verfügbar.'; // Fallback text
+        }
+    </script>
+</body>
+</html>
